@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вход</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  * { box-sizing: border-box; margin:0; padding:0; font-family:'Share Tech Mono', monospace; }
+  html, body { height: 100%; overflow: hidden; }
+
+  body { background: black; color:#00ff99; }
+
+  canvas { position:fixed; top:0; left:0; z-index:-1; }
+
+  .logo { position:absolute; top:10px; left:10px; width:60px; }
+
+  .container { display:flex; flex-direction:column; justify-content:center; align-items:center; height:100%; }
+  .login-box { background: rgba(0,0,0,0.7); padding:30px 40px; border:2px solid #00ff99; border-radius:10px; text-align:center; min-width:300px; }
+  .login-box h2 { margin-bottom:20px; }
+  .login-box input { width:100%; padding:10px; margin-bottom:15px; border:1px solid #00ff99; border-radius:5px; background:black; color:#00ff99; }
+  .login-box button { width:100%; padding:10px; border:none; background:#00ff99; color:black; font-weight:bold; cursor:pointer; border-radius:5px; transition:0.3s; }
+  .login-box button:hover { background:#00cc77; }
+
+  .welcome-box { text-align:center; color:#00ff99; text-shadow:0 0 10px #00ff99; }
+  .logout-btn { margin-top:20px; padding:10px 20px; background:#ff3300; border:none; border-radius:5px; cursor:pointer; color:white; font-weight:bold; }
+  .logout-btn:hover { background:#cc0000; }
+</style>
+</head>
+<body>
+
+<img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABi0lEQVR4nO3X0Q3CMAwF0Pv/yzVuETkJ7pF2YjKohZ2oRbqceOGG6WIBJSUUuB1DoBqt1T4KKqgy6frMBMIwG6r+QBcz1DHYeD4/jONkYx/MUuQ9nj/ZhDkO7fHxZDiMe1h/Ou+OGEMXnnwBuJODa3cH8ADgzfH0OgHgYeD9g6Dg4HfZ7GGA9RZ4H+LCpANxqD1N6m+Cyq5e5R5OkC+AB0TPMHQZ4C3AGdM8wYBxAFsA1wCxAHCkBHBkBB+Qv7uGH/XG1faCGEEEIIIYQQQgghhBBCiCEEEEIIIYQQQgghhBBCiCEEEEIIIYQQgghhBBCiCEEEEIIIYQQQgjhP+Bi1f0z4qvf5kAAAAASUVORK5CYII=" alt="Logo">
+
+<canvas id="matrix"></canvas>
+
+<div class="container" id="app">
+  <div class="login-box" id="login-box">
+    <h2>Вход в систему</h2>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Пароль">
+    <button id="login-btn">Войти</button>
+  </div>
+
+  <div class="welcome-box" id="welcome-box" style="display:none;">
+    <h1 id="welcome-message">Добро пожаловать!</h1>
+    <button class="logout-btn" id="logout-btn">Выход</button>
+  </div>
+</div>
+
+<script>
+  // Фон "матрица"
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*';
+  const fontSize = 18;
+  const columns = canvas.width / fontSize;
+  const drops = Array.from({length: columns}, ()=>Math.random()*canvas.height);
+
+  function draw() {
+    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#00ff99';
+    ctx.font = fontSize + "px monospace";
+
+    for(let i=0;i<drops.length;i++){
+      const text = letters.charAt(Math.floor(Math.random()*letters.length));
+      ctx.fillText(text,i*fontSize,drops[i]);
+      drops[i] += fontSize;
+      if(drops[i] > canvas.height) drops[i] = 0;
+    }
+  }
+  setInterval(draw, 50);
+
+  // Функция генерации фейкового JWT
+  function generateFakeJWT(payload) {
+    const header = { alg: "HS256", typ: "JWT" };
+
+    const base64Header = btoa(JSON.stringify(header));
+    const base64Payload = btoa(JSON.stringify(payload));
+    const signature = btoa("fake-signature");
+
+    return `${base64Header}.${base64Payload}.${signature}`;
+  }
+
+  // Пользователи
+  const users = {
+    "ivan@example.com": { password: "123456", message: "Братииииииш, ты какк!" },
+    "alex@example.com": { password: "abcdef", message: "Привет, Алекса!" },
+    "maria@example.com": { password: "qwerty", message: "Хей, Мария!" }
+  };
+
+  const loginBox = document.getElementById('login-box');
+  const welcomeBox = document.getElementById('welcome-box');
+  const welcomeMessage = document.getElementById('welcome-message');
+
+  const loginBtn = document.getElementById('login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+
+  function showWelcome(email) {
+    const user = users[email];
+    welcomeMessage.innerText = user ? user.message : "Добро пожаловать!";
+    loginBox.style.display = 'none';
+    welcomeBox.style.display = 'block';
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('email');
+    loginBox.style.display = 'block';
+    welcomeBox.style.display = 'none';
+  }
+
+  loginBtn.addEventListener('click', () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    if(users[email] && users[email].password === password){
+      const token = generateFakeJWT({ email: email, time: Date.now() });
+      localStorage.setItem('token', token);
+      localStorage.setItem('email', email);
+      showWelcome(email);
+    } else {
+      alert("Неверный логин или пароль");
+    }
+  });
+
+  logoutBtn.addEventListener('click', logout);
+
+  const savedToken = localStorage.getItem('token');
+  const savedEmail = localStorage.getItem('email');
+  if(savedToken && savedEmail) showWelcome(savedEmail);
+
+</script>
+</body>
+</html>
